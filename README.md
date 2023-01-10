@@ -33,11 +33,13 @@ jobs:
           mode: start
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          vm-service-account-id: ajeqnasj95o7******** # optional, if required additional permissions
-          vm-cores: 2
-          vm-memory: 512Mb
-          vm-core-fraction: 100
-          vm-subnet-id: e9b*********
+          folder-id: b1g*****
+          image-id: fd80o2eikcn22b229tsa # COI image id
+          service-account-id: ajeqnasj95o7******** # optional, if required additional permissions
+          cores: 2
+          memory: 512Mb
+          core-fraction: 100
+          subnet-id: e9b*********
   do-the-job:
     name: Do the job on the runner
     needs: start-runner # required to start the main job when the runner is ready
@@ -60,7 +62,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           label: ${{ needs.start-runner.outputs.label }}
-          yc-instance-id: ${{ needs.start-runner.outputs.yc-instance-id }}
+          instance-id: ${{ needs.start-runner.outputs.yc-instance-id }}
 ```
 
 See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.

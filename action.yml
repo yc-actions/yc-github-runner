@@ -28,40 +28,43 @@ inputs:
     description: >-
       Directory that contains actions-runner software and scripts. E.g. /home/runner/actions-runner.
     required: false
-  vm-service-account-id:
+  image-id:
+    required: false
+    description: 'Id of the image that will be used to create boot disk of the VM.'
+  service-account-id:
     required: false
     description: 'Id of service account that will be attached to VM.'
-  vm-cores:
+  cores:
     required: false
     description: 'Number of Cores'
     default: '2'
-  vm-memory:
+  memory:
     required: false
     description: 'Memory. Format: `\\d(Mb|Gb)`. E.g. 1Gb'
     default: '1GB'
-  vm-core-fraction:
+  core-fraction:
     required: false
     description: 'Core fraction'
     default: '100'
-  vm-disk-type:
+  disk-type:
     required: false
     description: 'Disk type. Values: network-ssd, network-hdd, etc. More info https://cloud.yandex.com/en-ru/docs/managed-clickhouse/concepts/storage'
     default: 'network-ssd'
-  vm-disk-size:
+  disk-size:
     required: false
     description: 'Disk size. Format: `\\d(Mb|Gb)`. E.g. 30Gb'
     default: '30GB'
-  vm-zone-id:
+  zone-id:
     required: false
     description: 'Zone ID'
     default: 'ru-central1-a'
-  vm-subnet-id:
+  subnet-id:
     required: true
     description: 'The subnet ID where the VM will be created'
-  vm-public-ip:
+  public-ip:
     required: false
     description: 'Public IP address'
-  vm-platform-id:
+  platform-id:
     required: false
     description: 'Compute platform Id'
     default: 'standard-v3'

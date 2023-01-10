@@ -72,7 +72,7 @@ export class Config {
   }
 
   generateUniqueLabel(): string {
-    return Math.random().toString(36).substr(2, 5);
+    return Math.random().toString(36).slice(2, 7);
   }
 }
 
@@ -86,17 +86,17 @@ function parseVmInputs(): ActionConfig {
   const runnerHomeDir = core.getInput('runner-home-dir');
   const label = core.getInput('label');
 
-  const serviceAccountId: string = core.getInput('vm-service-account-id');
+  const serviceAccountId: string = core.getInput('service-account-id');
 
-  const imageId: string = core.getInput('vm-image-id', {required: true});
-  const zoneId: string = core.getInput('vm-zone-id') || 'ru-central1-a';
-  const subnetId: string = core.getInput('vm-subnet-id', {required: true});
-  const platformId: string = core.getInput('vm-platform-id') || 'standard-v3';
-  const cores: number = parseInt(core.getInput('vm-cores') || '2', 10);
-  const memory: number = parseMemory(core.getInput('vm-memory') || '1Gb');
-  const diskType: string = core.getInput('vm-disk-type') || 'network-ssd';
-  const diskSize: number = parseMemory(core.getInput('vm-disk-size') || '30Gb');
-  const coreFraction: number = parseInt(core.getInput('vm-core-fraction') || '100', 10);
+  const imageId: string = core.getInput('image-id', {required: true});
+  const zoneId: string = core.getInput('zone-id') || 'ru-central1-a';
+  const subnetId: string = core.getInput('subnet-id', {required: true});
+  const platformId: string = core.getInput('platform-id') || 'standard-v3';
+  const cores: number = parseInt(core.getInput('cores') || '2', 10);
+  const memory: number = parseMemory(core.getInput('memory') || '1Gb');
+  const diskType: string = core.getInput('disk-type') || 'network-ssd';
+  const diskSize: number = parseMemory(core.getInput('disk-size') || '30Gb');
+  const coreFraction: number = parseInt(core.getInput('core-fraction') || '100', 10);
 
   const instanceId: string = core.getInput('instance-id', {required: false});
 
