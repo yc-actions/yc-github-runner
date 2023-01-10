@@ -142,7 +142,8 @@ async function start(
   const label = config.generateUniqueLabel();
   const githubRegistrationToken = await getRegistrationToken(config);
   const instanceId = await createVm(session, instanceService, github.context.repo, githubRegistrationToken, label);
-  core.setOutput(label, instanceId);
+  core.setOutput('label', label);
+  core.setOutput('instance-id', instanceId);
   await waitForRunnerRegistered(config, label);
 }
 

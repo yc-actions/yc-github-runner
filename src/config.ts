@@ -88,9 +88,9 @@ function parseVmInputs(): ActionConfig {
 
   const serviceAccountId: string = core.getInput('service-account-id');
 
-  const imageId: string = core.getInput('image-id', {required: true});
+  const imageId: string = core.getInput('image-id');
   const zoneId: string = core.getInput('zone-id') || 'ru-central1-a';
-  const subnetId: string = core.getInput('subnet-id', {required: true});
+  const subnetId: string = core.getInput('subnet-id');
   const platformId: string = core.getInput('platform-id') || 'standard-v3';
   const cores: number = parseInt(core.getInput('cores') || '2', 10);
   const memory: number = parseMemory(core.getInput('memory') || '1Gb');
