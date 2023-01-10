@@ -1,4 +1,4 @@
-name: 'YC COI Container Deploy'
+name: 'YC GitHub Runner'
 description: 'GitHub Action to deploy container to Yandex Cloud COI VM'
 author: 'Nikolay Matrosov'
 inputs:
