@@ -59,7 +59,7 @@ export class Config {
     }
 
     if (this.input.mode === 'start') {
-      if (!this.input.imageId || !this.input.subnetId) {
+      if (!this.input.imageId || !this.input.subnetId || !this.input.folderId) {
         throw new Error(`Not all the required inputs are provided for the 'start' mode`);
       }
     } else if (this.input.mode === 'stop') {
@@ -79,9 +79,7 @@ export class Config {
 function parseVmInputs(): ActionConfig {
   core.startGroup('Parsing Action Inputs');
 
-  const folderId: string = core.getInput('folder-id', {
-    required: true,
-  });
+  const folderId: string = core.getInput('folder-id');
 
   const mode = core.getInput('mode');
   const githubToken = core.getInput('github-token');
