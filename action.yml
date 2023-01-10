@@ -28,6 +28,11 @@ inputs:
     description: >-
       Directory that contains actions-runner software and scripts. E.g. /home/runner/actions-runner.
     required: false
+  instance-id:
+    required: false
+    description: >-
+      Id of the created instance.
+      This input is required if you use the 'stop' mode.
   image-id:
     required: false
     description: 'Id of the image that will be used to create boot disk of the VM.'
