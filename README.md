@@ -34,7 +34,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           vm-service-account-id: ajeqnasj95o7******** # optional, if required additional permissions
-          vm-cores: 1
+          vm-cores: 2
           vm-memory: 512Mb
           vm-core-fraction: 100
           vm-subnet-id: e9b*********
