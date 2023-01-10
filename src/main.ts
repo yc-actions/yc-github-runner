@@ -7,7 +7,7 @@ import {
   waitForOperation,
   WrappedServiceClientType,
 } from '@yandex-cloud/nodejs-sdk';
-import {IpVersion} from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance';
+import {Instance, IpVersion} from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance';
 import {
   AttachedDiskSpec_Mode,
   CreateInstanceMetadata,
@@ -100,8 +100,8 @@ async function createVm(
     }),
   );
   const finishedOp = await waitForOperation(op, session);
-  if (finishedOp.metadata) {
-    const instanceId = decodeMessage<CreateInstanceMetadata>(finishedOp.metadata).instanceId;
+  if (finishedOp.response) {
+    const instanceId = decodeMessage<Instance>(finishedOp.response).id;
     core.info(`Created instance with id '${instanceId}'`);
     core.endGroup();
     return instanceId;
@@ -127,7 +127,6 @@ async function destroyVm(
   if (finishedOp.metadata) {
     const instanceId = decodeMessage<CreateInstanceMetadata>(finishedOp.metadata).instanceId;
     core.info(`Destroyed instance with id '${instanceId}'`);
-    core.setOutput('instance-id', instanceId);
   } else {
     core.error(`Failed to create instance'`);
     throw new Error('Failed to create instance');
@@ -156,6 +155,7 @@ async function stop(
 }
 
 async function run(): Promise<void> {
+  core.setCommandEcho(true);
   try {
     core.info(`start`);
     const ycSaJsonCredentials = core.getInput('yc-sa-json-credentials', {
