@@ -1,0 +1,84 @@
+name: 'YC COI Container Deploy'
+description: 'GitHub Action to deploy container to Yandex Cloud COI VM'
+author: 'Nikolay Matrosov'
+inputs:
+  mode:
+    description: >-
+      Specify here which mode you want to use:
+        - 'start' - to start a new runner;
+        - 'stop' - to stop the previously created runner.
+    required: true
+  github-token:
+    description: >-
+      GitHub Personal Access Token with the 'repo' scope assigned.
+    required: true
+  yc-sa-json-credentials:
+    required: true
+    description: 'Json containing authorized key for Service Account. More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
+  folder-id:
+    required: true
+    description: 'Folder ID'
+  label:
+    description: >-
+      Name of the unique label assigned to the runner.
+      The label is used to remove the runner from GitHub when the runner is not needed anymore.
+      This input is required if you use the 'stop' mode.
+    required: false
+  runner-home-dir:
+    description: >-
+      Directory that contains actions-runner software and scripts. E.g. /home/runner/actions-runner.
+    required: false
+  vm-service-account-id:
+    required: false
+    description: 'Id of service account that will be attached to VM.'
+  vm-cores:
+    required: false
+    description: 'Number of Cores'
+    default: '2'
+  vm-memory:
+    required: false
+    description: 'Memory. Format: `\\d(Mb|Gb)`. E.g. 1Gb'
+    default: '1GB'
+  vm-core-fraction:
+    required: false
+    description: 'Core fraction'
+    default: '100'
+  vm-disk-type:
+    required: false
+    description: 'Disk type. Values: network-ssd, network-hdd, etc. More info https://cloud.yandex.com/en-ru/docs/managed-clickhouse/concepts/storage'
+    default: 'network-ssd'
+  vm-disk-size:
+    required: false
+    description: 'Disk size. Format: `\\d(Mb|Gb)`. E.g. 30Gb'
+    default: '30GB'
+  vm-zone-id:
+    required: false
+    description: 'Zone ID'
+    default: 'ru-central1-a'
+  vm-subnet-id:
+    required: true
+    description: 'The subnet ID where the VM will be created'
+  vm-public-ip:
+    required: false
+    description: 'Public IP address'
+  vm-platform-id:
+    required: false
+    description: 'Compute platform Id'
+    default: 'standard-v3'
+outputs:
+  label:
+    description: >-
+      Name of the unique label assigned to the runner.
+      The label is used in two cases:
+      - to use as the input of 'runs-on' property for the following jobs;
+      - to remove the runner from GitHub when it is not needed anymore.
+  instance-id:
+    description: >-
+      YC Instance Id of the created runner.
+      The id is used to terminate the instance when the runner is not needed anymore.
+branding:
+  color: blue
+  icon: upload-cloud
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
