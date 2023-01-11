@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-yc-runner.outputs.label }}
-      instance-id: ${{ steps.start-yc-runner.outputs.yc-instance-id }}
+      instance-id: ${{ steps.start-yc-runner.outputs.instance-id }}
     steps:
       - name: Start YC runner
         id: start-yc-runner
@@ -33,11 +33,10 @@ jobs:
           mode: start
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          folder-id: b1g*****
-          image-id: fd80o2eikcn22b229tsa # COI image id
-          service-account-id: ajeqnasj95o7******** # optional, if required additional permissions
+          folder-id: b1g*********
+          image-id: fd80*********
           cores: 2
-          memory: 512Mb
+          memory: 2GB
           core-fraction: 100
           subnet-id: e9b*********
   do-the-job:
@@ -62,7 +61,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           label: ${{ needs.start-runner.outputs.label }}
-          instance-id: ${{ needs.start-runner.outputs.yc-instance-id }}
+          instance-id: ${{ needs.start-runner.outputs.instance-id }}
 ```
 
 See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
