@@ -3,10 +3,23 @@ import * as github from '@actions/github';
 import {Config} from './config';
 
 interface Runner {
+  /** The id of the runner. */
   id: number;
+  /** The name of the runner. */
   name: string;
+  /** The Operating System of the runner. */
+  os: string;
+  /** The status of the runner. */
   status: string;
-  labels: {name: string}[];
+  busy: boolean;
+  labels: {
+    /** Unique identifier of the label. */
+    id?: number;
+    /** Name of the label. */
+    name?: string;
+    /** The type of label. Read-only labels are applied automatically when the runner is configured. */
+    type?: 'read-only' | 'custom';
+  }[];
 }
 
 // use the unique label to find the runner
