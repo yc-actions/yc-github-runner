@@ -31,7 +31,7 @@
     "@grpc/grpc-js": "1.8.11"
   },
   "devDependencies": {
-    "@types/node": "^18.14.2",
+    "@types/node": "^18.14.6",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.1",
     "@vercel/ncc": "^0.36.1",
