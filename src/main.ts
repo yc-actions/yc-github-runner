@@ -9,6 +9,7 @@ import {
 } from '@yandex-cloud/nodejs-sdk';
 import {Instance, IpVersion} from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance';
 import {
+  AttachedDiskSpec,
   AttachedDiskSpec_Mode,
   CreateInstanceMetadata,
   CreateInstanceRequest,
@@ -65,6 +66,22 @@ async function createVm(
 ): Promise<string> {
   core.startGroup('Create VM');
 
+  const secondaryDiskSpecs: AttachedDiskSpec[] = [];
+
+  if (config.input.secondDiskSize > 0) {
+    secondaryDiskSpecs.push(
+      AttachedDiskSpec.fromPartial({
+        autoDelete: true,
+        mode: AttachedDiskSpec_Mode.READ_WRITE,
+        diskSpec: {
+          imageId: config.input.secondDiskImageId,
+          size: config.input.secondDiskSize,
+          typeId: config.input.secondDiskType,
+        },
+      }),
+    );
+  }
+
   const op = await instanceService.create(
     CreateInstanceRequest.fromPartial({
       folderId: config.input.folderId,
@@ -86,6 +103,7 @@ async function createVm(
           imageId: config.input.imageId,
         },
       },
+      secondaryDiskSpecs,
       networkInterfaceSpecs: [
         {
           subnetId: config.input.subnetId,

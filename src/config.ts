@@ -23,6 +23,10 @@ export interface ActionConfig {
   platformId: string;
   resourcesSpec: ResourcesSpec;
 
+  secondDiskImageId: string;
+  secondDiskType: string;
+  secondDiskSize: number;
+
   instanceId?: string;
 }
 
@@ -35,8 +39,8 @@ export class Config {
   input: ActionConfig;
   githubContext: GithubRepo;
 
-  constructor() {
-    this.input = parseVmInputs();
+  constructor(input?: ActionConfig) {
+    this.input = input ?? parseVmInputs();
 
     // the values of github.context.repo.owner and github.context.repo.repo are taken from
     // the environment variable GITHUB_REPOSITORY specified in "owner/repo" format and
@@ -61,6 +65,10 @@ export class Config {
     if (this.input.mode === 'start') {
       if (!this.input.imageId || !this.input.subnetId || !this.input.folderId) {
         throw new Error(`Not all the required inputs are provided for the 'start' mode`);
+      }
+
+      if (this.input.secondDiskSize > 0 && !this.input.secondDiskImageId) {
+        throw new Error(`Secondary disk image id is missing`);
       }
     } else if (this.input.mode === 'stop') {
       if (!this.input.label || !this.input.instanceId) {
@@ -98,6 +106,10 @@ function parseVmInputs(): ActionConfig {
   const diskSize: number = parseMemory(core.getInput('disk-size') || '30Gb');
   const coreFraction: number = parseInt(core.getInput('core-fraction') || '100', 10);
 
+  const secondDiskImageId: string = core.getInput('image2-id');
+  const secondDiskType: string = core.getInput('disk2-type') || 'network-ssd';
+  const secondDiskSize: number = parseMemory(core.getInput('disk2-size') || '0Gb');
+
   const instanceId: string = core.getInput('instance-id', {required: false});
 
   core.endGroup();
@@ -115,6 +127,9 @@ function parseVmInputs(): ActionConfig {
     runnerHomeDir,
     label,
     serviceAccountId,
+    secondDiskImageId,
+    secondDiskType,
+    secondDiskSize,
     resourcesSpec: {
       cores,
       memory,

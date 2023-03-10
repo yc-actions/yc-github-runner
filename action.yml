@@ -59,6 +59,16 @@ inputs:
     required: false
     description: 'Disk size. Format: `\\d(Mb|Gb)`. E.g. 30Gb'
     default: '30GB'
+  image2-id:
+    required: false
+    description: 'Id of the image that will be used to create a second disk on the VM.'
+  disk2-type:
+    required: false
+    description: 'Second disk type. Values: network-ssd, network-hdd, etc. More info https://cloud.yandex.com/en-ru/docs/managed-clickhouse/concepts/storage'
+    default: 'network-ssd'
+  disk2-size:
+    required: false
+    description: 'Second disk size. Format: `\\d(Mb|Gb)`. E.g. 30Gb'
   zone-id:
     required: false
     description: 'Zone ID'
