@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {expect, test} from '@jest/globals';
 import {GB, MB, parseMemory} from '../src/memory';
 
 const mbs = ['mb', 'MB', ' mb'];
@@ -16,7 +16,7 @@ test.each(
 });
 
 test.each(
-  [1, 2, 4, 8].flatMap(x =>
+  [0, 1, 2, 4, 8].flatMap(x =>
     gbs.map(u => ({
       input: x.toString() + u,
       expected: (x as any) * GB,
