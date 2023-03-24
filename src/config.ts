@@ -27,6 +27,9 @@ export interface ActionConfig {
   secondDiskType: string;
   secondDiskSize: number;
 
+  user: string;
+  sshPublicKey: string;
+
   instanceId?: string;
 }
 
@@ -110,6 +113,9 @@ function parseVmInputs(): ActionConfig {
   const secondDiskType: string = core.getInput('disk2-type') || 'network-ssd';
   const secondDiskSize: number = parseMemory(core.getInput('disk2-size') || '0Gb');
 
+  const user: string = core.getInput('user');
+  const sshPublicKey: string = core.getInput('ssh-public-key');
+
   const instanceId: string = core.getInput('instance-id', {required: false});
 
   core.endGroup();
@@ -130,6 +136,8 @@ function parseVmInputs(): ActionConfig {
     secondDiskImageId,
     secondDiskType,
     secondDiskSize,
+    user,
+    sshPublicKey,
     resourcesSpec: {
       cores,
       memory,
