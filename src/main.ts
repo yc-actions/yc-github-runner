@@ -16,6 +16,7 @@ import {
   DeleteInstanceRequest,
   InstanceServiceService,
 } from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance_service';
+import * as yaml from 'js-yaml';
 import {Config, GithubRepo} from './config';
 import {getRegistrationToken, removeRunner, waitForRunnerRegistered} from './gh';
 import {fromServiceAccountJsonFile} from './service-account-json';
@@ -31,29 +32,52 @@ try {
 }
 
 // User data scripts are run as the root user
-function buildUserDataScript(githubRegistrationToken: string, label: string): string[] {
+export function buildUserDataScript(params: {
+  githubRegistrationToken: string;
+  label: string;
+  runnerHomeDir: string;
+  owner: string;
+  repo: string;
+  user: string;
+  sshPublicKey: string;
+}): string[] {
+  const {githubRegistrationToken, label, runnerHomeDir, repo, owner, user, sshPublicKey} = params;
+  let script: string[];
   /*eslint-disable max-len*/
-  if (config.input.runnerHomeDir) {
+  if (runnerHomeDir) {
     // If runner home directory is specified, we expect the actions-runner software (and dependencies)
     // to be pre-installed in the image, so we simply cd into that directory and then start the runner
-    return [
+    script = [
       '#!/bin/bash',
-      `cd "${config.input.runnerHomeDir}"`,
+      `cd "${runnerHomeDir}"`,
       'export RUNNER_ALLOW_RUNASROOT=1',
-      `./config.sh --url https://github.com/${config.githubContext.owner}/${config.githubContext.repo} --token ${githubRegistrationToken} --labels ${label}`,
+      `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}`,
       './run.sh',
     ];
   } else {
-    return [
+    script = [
       '#!/bin/bash',
       'mkdir actions-runner && cd actions-runner',
       'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
       'curl -O -L https://github.com/actions/runner/releases/download/v2.299.1/actions-runner-linux-${RUNNER_ARCH}-2.299.1.tar.gz',
       'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.299.1.tar.gz',
       'export RUNNER_ALLOW_RUNASROOT=1',
-      `./config.sh --url https://github.com/${config.githubContext.owner}/${config.githubContext.repo} --token ${githubRegistrationToken} --labels ${label}`,
+      `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}`,
       './run.sh',
     ];
+  }
+  if (user !== '' && sshPublicKey !== '') {
+    const cloudInit = yaml.load(`ssh_pwauth: no
+users:
+  - name: ${user}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - "${sshPublicKey}"`) as Record<string, unknown>;
+    cloudInit['runcmd'] = script.slice(1);
+    return ['#cloud-config', ...yaml.dump(cloudInit).split('\n')];
+  } else {
+    return script;
   }
 }
 
@@ -90,7 +114,15 @@ async function createVm(
       platformId: config.input.platformId,
       resourcesSpec: config.input.resourcesSpec,
       metadata: {
-        'user-data': buildUserDataScript(githubRegistrationToken, label).join('\n'),
+        'user-data': buildUserDataScript({
+          githubRegistrationToken,
+          label,
+          runnerHomeDir: config.input.runnerHomeDir,
+          user: config.input.user,
+          sshPublicKey: config.input.sshPublicKey,
+          repo: config.githubContext.repo,
+          owner: config.githubContext.owner,
+        }).join('\n'),
       },
       labels: {},
 

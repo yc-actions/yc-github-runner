@@ -1,0 +1,73 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`cloud-init default 1`] = `
+[
+  "#!/bin/bash",
+  "mkdir actions-runner && cd actions-runner",
+  "case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=\${ARCH}",
+  "curl -O -L https://github.com/actions/runner/releases/download/v2.299.1/actions-runner-linux-\${RUNNER_ARCH}-2.299.1.tar.gz",
+  "tar xzf ./actions-runner-linux-\${RUNNER_ARCH}-2.299.1.tar.gz",
+  "export RUNNER_ALLOW_RUNASROOT=1",
+  "./config.sh --url https://github.com/owner/repo --token githubRegistrationToken --labels label",
+  "./run.sh",
+]
+`;
+
+exports[`cloud-init with home dir 1`] = `
+[
+  "#!/bin/bash",
+  "cd "foo"",
+  "export RUNNER_ALLOW_RUNASROOT=1",
+  "./config.sh --url https://github.com/owner/repo --token githubRegistrationToken --labels label",
+  "./run.sh",
+]
+`;
+
+exports[`cloud-init with home dir and user and ssh key 1`] = `
+[
+  "#cloud-config",
+  "ssh_pwauth: 'no'",
+  "users:",
+  "  - name: user",
+  "    sudo: ALL=(ALL) NOPASSWD:ALL",
+  "    shell: /bin/bash",
+  "    ssh_authorized_keys:",
+  "      - key",
+  "runcmd:",
+  "  - cd "foo"",
+  "  - export RUNNER_ALLOW_RUNASROOT=1",
+  "  - >-",
+  "    ./config.sh --url https://github.com/owner/repo --token",
+  "    githubRegistrationToken --labels label",
+  "  - ./run.sh",
+  "",
+]
+`;
+
+exports[`cloud-init with user and ssh key 1`] = `
+[
+  "#cloud-config",
+  "ssh_pwauth: 'no'",
+  "users:",
+  "  - name: user",
+  "    sudo: ALL=(ALL) NOPASSWD:ALL",
+  "    shell: /bin/bash",
+  "    ssh_authorized_keys:",
+  "      - key",
+  "runcmd:",
+  "  - mkdir actions-runner && cd actions-runner",
+  "  - >-",
+  "    case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;;",
+  "    esac && export RUNNER_ARCH=\${ARCH}",
+  "  - >-",
+  "    curl -O -L",
+  "    https://github.com/actions/runner/releases/download/v2.299.1/actions-runner-linux-\${RUNNER_ARCH}-2.299.1.tar.gz",
+  "  - tar xzf ./actions-runner-linux-\${RUNNER_ARCH}-2.299.1.tar.gz",
+  "  - export RUNNER_ALLOW_RUNASROOT=1",
+  "  - >-",
+  "    ./config.sh --url https://github.com/owner/repo --token",
+  "    githubRegistrationToken --labels label",
+  "  - ./run.sh",
+  "",
+]
+`;

@@ -83,6 +83,13 @@ inputs:
     required: false
     description: 'Compute platform Id'
     default: 'standard-v3'
+
+  user:
+    required: false
+    description: 'User name to login with via ssh'
+  ssh-public-key:
+    required: false
+    description: 'Public SSH key to login with'
 outputs:
   label:
     description: >-
