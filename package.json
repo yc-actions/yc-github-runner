@@ -28,7 +28,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
     "@yandex-cloud/nodejs-sdk": "^2.4.4",
-    "@grpc/grpc-js": "1.8.14",
+    "@grpc/grpc-js": "1.8.15",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
