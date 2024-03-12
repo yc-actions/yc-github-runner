@@ -10,7 +10,8 @@
     "lint": "eslint src/**/*.ts --fix",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "GITHUB_REPOSITORY=owner/repo GITHUB_WORKSPACE=__tests__ jest --verbose",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
+    "git-tag": "git tag v`cat package.json | jq -r '.version' | awk -F. '{print $1}'` -f &&  git tag v`cat package.json | jq -r '.version'` -f"
   },
   "repository": {
     "type": "git",
