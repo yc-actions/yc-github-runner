@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import {
   decodeMessage,
+  errors,
   serviceClients,
   Session,
   waitForOperation,
@@ -245,6 +246,9 @@ async function run(): Promise<void> {
         throw new Error(`Unknown mode ${config.input.mode}`);
     }
   } catch (error) {
+    if (error instanceof errors.ApiError) {
+      core.error(`${error.message}\nx-request-id: ${error.requestId}\nx-server-trace-id: ${error.serverTraceId}`);
+    }
     core.setFailed(error as Error);
   }
 }
