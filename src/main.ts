@@ -111,7 +111,7 @@ async function createVm(
       }),
     );
   }
-  let primaryV4AddressSpec;
+  let primaryV4AddressSpec = {};
 
   if (config.input.publicIp) {
     primaryV4AddressSpec = {
