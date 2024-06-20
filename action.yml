@@ -79,10 +79,15 @@ inputs:
   public-ip:
     required: false
     description: 'Public IP address'
+    default: 'true'
   platform-id:
     required: false
     description: 'Compute platform Id'
     default: 'standard-v3'
+  runner-version:
+    required: false
+    description: 'Version of the actions-runner software'
+    default: '2.299.1'
 
   user:
     required: false
