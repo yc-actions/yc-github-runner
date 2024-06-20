@@ -15,6 +15,7 @@ export interface ActionConfig {
   runnerHomeDir: string;
   label: string;
   subnetId: string;
+  publicIp: boolean;
   serviceAccountId: string;
   diskType: string;
   diskSize: number;
@@ -31,6 +32,8 @@ export interface ActionConfig {
   sshPublicKey: string;
 
   instanceId?: string;
+
+  runnerVersion: string;
 }
 
 export interface GithubRepo {
@@ -102,6 +105,7 @@ function parseVmInputs(): ActionConfig {
   const imageId: string = core.getInput('image-id');
   const zoneId: string = core.getInput('zone-id') || 'ru-central1-a';
   const subnetId: string = core.getInput('subnet-id');
+  const publicIp: boolean = core.getBooleanInput('public-ip', {required: false});
   const platformId: string = core.getInput('platform-id') || 'standard-v3';
   const cores: number = parseInt(core.getInput('cores') || '2', 10);
   const memory: number = parseMemory(core.getInput('memory') || '1Gb');
@@ -118,6 +122,8 @@ function parseVmInputs(): ActionConfig {
 
   const instanceId: string = core.getInput('instance-id', {required: false});
 
+  const runnerVersion: string = core.getInput('runner-version', {required: false});
+
   core.endGroup();
   return {
     instanceId,
@@ -125,6 +131,7 @@ function parseVmInputs(): ActionConfig {
     diskType,
     diskSize,
     subnetId,
+    publicIp,
     zoneId,
     platformId,
     folderId,
@@ -138,6 +145,7 @@ function parseVmInputs(): ActionConfig {
     secondDiskSize,
     user,
     sshPublicKey,
+    runnerVersion,
     resourcesSpec: {
       cores,
       memory,

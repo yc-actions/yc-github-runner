@@ -15,6 +15,7 @@ import {
   CreateInstanceRequest,
   DeleteInstanceRequest,
   InstanceServiceService,
+  NetworkInterfaceSpec,
 } from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance_service';
 import * as yaml from 'js-yaml';
 import {Config, GithubRepo} from './config';
@@ -31,8 +32,7 @@ try {
   core.setFailed(err.message);
 }
 
-// User data scripts are run as the root user
-export function buildUserDataScript(params: {
+interface BuildUserDataScriptParams {
   githubRegistrationToken: string;
   label: string;
   runnerHomeDir: string;
@@ -40,7 +40,11 @@ export function buildUserDataScript(params: {
   repo: string;
   user: string;
   sshPublicKey: string;
-}): string[] {
+  runnerVersion: string;
+}
+
+// User data scripts are run as the root user
+export function buildUserDataScript(params: BuildUserDataScriptParams): string[] {
   const {githubRegistrationToken, label, runnerHomeDir, repo, owner, user, sshPublicKey} = params;
   let script: string[];
   /*eslint-disable max-len*/
@@ -55,12 +59,13 @@ export function buildUserDataScript(params: {
       './run.sh',
     ];
   } else {
+    const version = params.runnerVersion;
     script = [
       '#!/bin/bash',
       'mkdir actions-runner && cd actions-runner',
       'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
-      'curl -O -L https://github.com/actions/runner/releases/download/v2.299.1/actions-runner-linux-${RUNNER_ARCH}-2.299.1.tar.gz',
-      'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.299.1.tar.gz',
+      `curl -O -L https://github.com/actions/runner/releases/download/v${version}/actions-runner-linux-\${RUNNER_ARCH}-${version}.tar.gz`,
+      `tar xzf ./actions-runner-linux-\${RUNNER_ARCH}-${version}.tar.gz`,
       'export RUNNER_ALLOW_RUNASROOT=1',
       `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}`,
       './run.sh',
@@ -105,6 +110,20 @@ async function createVm(
       }),
     );
   }
+  let primaryV4AddressSpec;
+
+  if (config.input.publicIp) {
+    primaryV4AddressSpec = {
+      oneToOneNatSpec: {
+        ipVersion: IpVersion.IPV4,
+      },
+    };
+  }
+
+  const networkInterfaceSpec = NetworkInterfaceSpec.fromPartial({
+    subnetId: config.input.subnetId,
+    primaryV4AddressSpec,
+  });
 
   const op = await instanceService.create(
     CreateInstanceRequest.fromPartial({
@@ -122,6 +141,7 @@ async function createVm(
           sshPublicKey: config.input.sshPublicKey,
           repo: config.githubContext.repo,
           owner: config.githubContext.owner,
+          runnerVersion: config.input.runnerVersion,
         }).join('\n'),
       },
       labels: {},
@@ -136,16 +156,7 @@ async function createVm(
         },
       },
       secondaryDiskSpecs,
-      networkInterfaceSpecs: [
-        {
-          subnetId: config.input.subnetId,
-          primaryV4AddressSpec: {
-            oneToOneNatSpec: {
-              ipVersion: IpVersion.IPV4,
-            },
-          },
-        },
-      ],
+      networkInterfaceSpecs: [networkInterfaceSpec],
       serviceAccountId: config.input.serviceAccountId,
     }),
   );

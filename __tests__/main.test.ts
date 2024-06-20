@@ -1,4 +1,4 @@
-import {describe, test, expect} from '@jest/globals';
+import {describe, expect, test} from '@jest/globals';
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as process from 'process';
@@ -34,6 +34,7 @@ describe('cloud-init', () => {
       runnerHomeDir: '',
       user: '',
       sshPublicKey: '',
+      runnerVersion: '2.299.1',
     });
     expect(actual.length).toBe(8);
     expect(actual).toMatchSnapshot();
@@ -49,6 +50,7 @@ describe('cloud-init', () => {
       runnerHomeDir: 'foo',
       user: '',
       sshPublicKey: '',
+      runnerVersion: '2.299.1',
     });
     expect(actual.length).toBe(5);
     expect(actual).toMatchSnapshot();
@@ -64,6 +66,7 @@ describe('cloud-init', () => {
       runnerHomeDir: '',
       user: 'user',
       sshPublicKey: 'key',
+      runnerVersion: '2.299.1',
     });
     expect(actual.length).toBe(23);
     expect(actual).toMatchSnapshot();
@@ -79,6 +82,7 @@ describe('cloud-init', () => {
       runnerHomeDir: 'foo',
       user: 'user',
       sshPublicKey: 'key',
+      runnerVersion: '2.299.1',
     });
     expect(actual.length).toBe(16);
     expect(actual).toMatchSnapshot();

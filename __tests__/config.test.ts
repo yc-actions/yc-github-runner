@@ -10,6 +10,7 @@ test('basic Config ', () => {
       diskType: 'diskType',
       diskSize: 10 * 1024 ** 3,
       subnetId: 'subnetId',
+      publicIp: true,
       zoneId: 'zoneId',
       platformId: 'platformId',
       folderId: 'folderId',
@@ -23,6 +24,7 @@ test('basic Config ', () => {
       secondDiskSize: 0,
       user: '',
       sshPublicKey: '',
+      runnerVersion: '2.299.1',
       resourcesSpec: {
         cores: 1,
         memory: 10 * 1024 ** 3,
@@ -40,6 +42,7 @@ test('add secondary disk', () => {
       diskType: 'diskType',
       diskSize: parseMemory('256Gb'),
       subnetId: 'subnetId',
+      publicIp: true,
       zoneId: 'zoneId',
       platformId: 'platformId',
       folderId: 'folderId',
@@ -53,6 +56,7 @@ test('add secondary disk', () => {
       secondDiskSize: parseMemory('30Gb'),
       user: '',
       sshPublicKey: '',
+      runnerVersion: '2.299.1',
       resourcesSpec: {
         cores: 1,
         memory: parseMemory('8Gb'),
@@ -70,6 +74,7 @@ test('add secondary disk without image-id throw error', () => {
       diskType: 'diskType',
       diskSize: parseMemory('256Gb'),
       subnetId: 'subnetId',
+      publicIp: true,
       zoneId: 'zoneId',
       platformId: 'platformId',
       folderId: 'folderId',
@@ -83,6 +88,7 @@ test('add secondary disk without image-id throw error', () => {
       secondDiskSize: parseMemory('30Gb'),
       user: 'user',
       sshPublicKey: 'sshPublicKey',
+      runnerVersion: '2.299.1',
       resourcesSpec: {
         cores: 1,
         memory: parseMemory('8Gb'),
