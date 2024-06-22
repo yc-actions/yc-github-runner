@@ -39,6 +39,7 @@ jobs:
           memory: 2GB
           core-fraction: 100
           subnet-id: e9b*********
+          ttl: PT24H
   do-the-job:
     name: Do the job on the runner
     needs: start-runner # required to start the main job when the runner is ready
@@ -65,6 +66,11 @@ jobs:
 ```
 
 See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
+
+### TTL input
+If it is set, `expires` label will be added to the instance with the value of the current time plus TTL in seconds.
+Instance won't automatically be destroyed by Yandex.Cloud, you should handle it yourself.
+For example, by using Cron trigger that will call Cloud Function to destroy the instance.
 
 ## Permissions
 

@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import {parseMemory} from './memory';
+import moment from 'moment';
 
 export interface ResourcesSpec {
   memory: number;
@@ -34,6 +35,7 @@ export interface ActionConfig {
   instanceId?: string;
 
   runnerVersion: string;
+  ttl?: moment.Duration;
 }
 
 export interface GithubRepo {
@@ -124,6 +126,12 @@ function parseVmInputs(): ActionConfig {
 
   const runnerVersion: string = core.getInput('runner-version', {required: false});
 
+  let ttl: moment.Duration | undefined = undefined;
+  const ttlInput = core.getInput('ttl', {required: false});
+  if (ttlInput) {
+    ttl = moment.duration(ttlInput);
+  }
+
   core.endGroup();
   return {
     instanceId,
@@ -146,6 +154,7 @@ function parseVmInputs(): ActionConfig {
     user,
     sshPublicKey,
     runnerVersion,
+    ttl,
     resourcesSpec: {
       cores,
       memory,

@@ -22,6 +22,7 @@ import * as yaml from 'js-yaml';
 import {Config, GithubRepo} from './config';
 import {getRegistrationToken, removeRunner, waitForRunnerRegistered} from './gh';
 import {fromServiceAccountJsonFile} from './service-account-json';
+import moment from 'moment';
 
 let config: Config;
 
@@ -126,6 +127,15 @@ async function createVm(
     primaryV4AddressSpec,
   });
 
+  const labels: Record<string, string> = {};
+
+  if (config.input.ttl) {
+    // Set `expires` label to the current time + TTL Duration
+    // Instance won't automatically be destroyed by Yandex.Cloud, you should handle it yourself
+    // For example, by using Cron trigger that will call Cloud Function to destroy the instance.
+    labels['expires'] = moment.utc().add(config.input.ttl).unix().toString();
+  }
+
   const op = await instanceService.create(
     CreateInstanceRequest.fromPartial({
       folderId: config.input.folderId,
@@ -145,7 +155,7 @@ async function createVm(
           runnerVersion: config.input.runnerVersion,
         }).join('\n'),
       },
-      labels: {},
+      labels,
 
       bootDiskSpec: {
         mode: AttachedDiskSpec_Mode.READ_WRITE,
