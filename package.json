@@ -1,6 +1,6 @@
 {
   "name": "yc-github-runner",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "GitHub Action to On-demand self-hosted YC runner for GitHub Actions.",
   "main": "lib/main.js",
   "scripts": {
