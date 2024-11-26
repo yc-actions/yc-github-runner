@@ -2,7 +2,7 @@ import { expect, test } from '@jest/globals'
 import { Config } from '../src/config'
 import { parseMemory } from '../src/memory'
 
-test('basic Config ', () => {
+test('basic Config', () => {
     expect(() => {
         new Config({
             instanceId: 'instanceId',
@@ -25,6 +25,7 @@ test('basic Config ', () => {
             user: '',
             sshPublicKey: '',
             runnerVersion: '2.299.1',
+            disableUpdate: false,
             resourcesSpec: {
                 cores: 1,
                 memory: 10 * 1024 ** 3,
@@ -57,6 +58,7 @@ test('add secondary disk', () => {
             user: '',
             sshPublicKey: '',
             runnerVersion: '2.299.1',
+            disableUpdate: false,
             resourcesSpec: {
                 cores: 1,
                 memory: parseMemory('8Gb'),
@@ -89,6 +91,7 @@ test('add secondary disk without image-id throw error', () => {
             user: 'user',
             sshPublicKey: 'sshPublicKey',
             runnerVersion: '2.299.1',
+            disableUpdate: false,
             resourcesSpec: {
                 cores: 1,
                 memory: parseMemory('8Gb'),

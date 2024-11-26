@@ -87,10 +87,14 @@ inputs:
   runner-version:
     required: false
     description: 'Version of the actions-runner software'
-    default: '2.299.1'
+    default: '2.320.0'
   ttl:
     required: false
     description: 'Time to live in ISO 8601 Duration format. E.g. PT1H'
+  disable-update:
+    required: false
+    description: 'Disable update'
+    default: 'false'
 
   user:
     required: false
