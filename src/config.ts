@@ -36,6 +36,7 @@ export interface ActionConfig {
 
     runnerVersion: string
     ttl?: moment.Duration
+    disableUpdate: boolean
 }
 
 export interface GithubRepo {
@@ -125,6 +126,7 @@ function parseVmInputs(): ActionConfig {
     const instanceId: string = core.getInput('instance-id', { required: false })
 
     const runnerVersion: string = core.getInput('runner-version', { required: false })
+    const disableUpdate: boolean = core.getBooleanInput('disable-update', { required: false })
 
     let ttl: moment.Duration | undefined = undefined
     const ttlInput = core.getInput('ttl', { required: false })
@@ -155,6 +157,7 @@ function parseVmInputs(): ActionConfig {
         sshPublicKey,
         runnerVersion,
         ttl,
+        disableUpdate,
         resourcesSpec: {
             cores,
             memory,

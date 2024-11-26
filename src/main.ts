@@ -43,6 +43,7 @@ interface BuildUserDataScriptParams {
     user: string
     sshPublicKey: string
     runnerVersion: string
+    disableUpdate: boolean
 }
 
 // User data scripts are run as the root user
@@ -57,7 +58,7 @@ export function buildUserDataScript(params: BuildUserDataScriptParams): string[]
             '#!/bin/bash',
             `cd "${runnerHomeDir}"`,
             'export RUNNER_ALLOW_RUNASROOT=1',
-            `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}`,
+            `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}${params.disableUpdate ? ' --disableupdate' : ''}`,
             './run.sh'
         ]
     } else {
@@ -69,7 +70,7 @@ export function buildUserDataScript(params: BuildUserDataScriptParams): string[]
             `curl -O -L https://github.com/actions/runner/releases/download/v${version}/actions-runner-linux-\${RUNNER_ARCH}-${version}.tar.gz`,
             `tar xzf ./actions-runner-linux-\${RUNNER_ARCH}-${version}.tar.gz`,
             'export RUNNER_ALLOW_RUNASROOT=1',
-            `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}`,
+            `./config.sh --url https://github.com/${owner}/${repo} --token ${githubRegistrationToken} --labels ${label}${params.disableUpdate ? ' --disableupdate' : ''}`,
             './run.sh'
         ]
     }
@@ -152,7 +153,8 @@ async function createVm(
                     sshPublicKey: config.input.sshPublicKey,
                     repo: config.githubContext.repo,
                     owner: config.githubContext.owner,
-                    runnerVersion: config.input.runnerVersion
+                    runnerVersion: config.input.runnerVersion,
+                    disableUpdate: config.input.disableUpdate
                 }).join('\n')
             },
             labels,
