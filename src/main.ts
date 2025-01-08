@@ -1,5 +1,14 @@
-import * as core from '@actions/core'
-import * as github from '@actions/github'
+import {
+    error as core_error,
+    setFailed,
+    startGroup,
+    info,
+    endGroup,
+    setOutput,
+    setCommandEcho,
+    getInput
+} from '@actions/core'
+import { context } from '@actions/github'
 import {
     decodeMessage,
     errors,
@@ -18,7 +27,7 @@ import {
     InstanceServiceService,
     NetworkInterfaceSpec
 } from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance_service'
-import * as yaml from 'js-yaml'
+import { load, dump } from 'js-yaml'
 import { Config, GithubRepo } from './config'
 import { getRegistrationToken, removeRunner, waitForRunnerRegistered } from './gh'
 import { fromServiceAccountJsonFile } from './service-account-json'
@@ -30,8 +39,8 @@ try {
     config = new Config()
 } catch (error) {
     const err = error as Error
-    core.error(err)
-    core.setFailed(err.message)
+    core_error(err)
+    setFailed(err.message)
 }
 
 interface BuildUserDataScriptParams {
@@ -50,7 +59,7 @@ interface BuildUserDataScriptParams {
 export function buildUserDataScript(params: BuildUserDataScriptParams): string[] {
     const { githubRegistrationToken, label, runnerHomeDir, repo, owner, user, sshPublicKey } = params
     let script: string[]
-    /*eslint-disable max-len*/
+
     if (runnerHomeDir) {
         // If runner home directory is specified, we expect the actions-runner software (and dependencies)
         // to be pre-installed in the image, so we simply cd into that directory and then start the runner
@@ -75,7 +84,7 @@ export function buildUserDataScript(params: BuildUserDataScriptParams): string[]
         ]
     }
     if (user !== '' && sshPublicKey !== '') {
-        const cloudInit = yaml.load(`ssh_pwauth: no
+        const cloudInit = load(`ssh_pwauth: no
 users:
   - name: ${user}
     sudo: ALL=(ALL) NOPASSWD:ALL
@@ -83,7 +92,7 @@ users:
     ssh_authorized_keys:
       - "${sshPublicKey}"`) as Record<string, unknown>
         cloudInit['runcmd'] = script.slice(1)
-        return ['#cloud-config', ...yaml.dump(cloudInit).split('\n')]
+        return ['#cloud-config', ...dump(cloudInit).split('\n')]
     } else {
         return script
     }
@@ -96,7 +105,7 @@ async function createVm(
     githubRegistrationToken: string,
     label: string
 ): Promise<string> {
-    core.startGroup('Create VM')
+    startGroup('Create VM')
 
     const secondaryDiskSpecs: AttachedDiskSpec[] = []
 
@@ -176,12 +185,12 @@ async function createVm(
     const finishedOp = await waitForOperation(op, session)
     if (finishedOp.response) {
         const instanceId = decodeMessage<Instance>(finishedOp.response).id
-        core.info(`Created instance with id '${instanceId}'`)
-        core.endGroup()
+        info(`Created instance with id '${instanceId}'`)
+        endGroup()
         return instanceId
     } else {
-        core.error(`Failed to create instance'`)
-        core.endGroup()
+        core_error(`Failed to create instance'`)
+        endGroup()
         throw new Error('Failed to create instance')
     }
 }
@@ -190,7 +199,7 @@ async function destroyVm(
     session: Session,
     instanceService: WrappedServiceClientType<typeof InstanceServiceService>
 ): Promise<void> {
-    core.startGroup('Create VM')
+    startGroup('Create VM')
 
     const op = await instanceService.delete(
         DeleteInstanceRequest.fromPartial({
@@ -200,12 +209,12 @@ async function destroyVm(
     const finishedOp = await waitForOperation(op, session)
     if (finishedOp.metadata) {
         const instanceId = decodeMessage<CreateInstanceMetadata>(finishedOp.metadata).instanceId
-        core.info(`Destroyed instance with id '${instanceId}'`)
+        info(`Destroyed instance with id '${instanceId}'`)
     } else {
-        core.error(`Failed to create instance'`)
+        core_error(`Failed to create instance'`)
         throw new Error('Failed to create instance')
     }
-    core.endGroup()
+    endGroup()
 }
 
 async function start(
@@ -214,9 +223,9 @@ async function start(
 ): Promise<void> {
     const label = config.generateUniqueLabel()
     const githubRegistrationToken = await getRegistrationToken(config)
-    const instanceId = await createVm(session, instanceService, github.context.repo, githubRegistrationToken, label)
-    core.setOutput('label', label)
-    core.setOutput('instance-id', instanceId)
+    const instanceId = await createVm(session, instanceService, context.repo, githubRegistrationToken, label)
+    setOutput('label', label)
+    setOutput('instance-id', instanceId)
     await waitForRunnerRegistered(config, label)
 }
 
@@ -229,17 +238,17 @@ async function stop(
 }
 
 async function run(): Promise<void> {
-    core.setCommandEcho(true)
+    setCommandEcho(true)
     try {
-        core.info(`start`)
-        const ycSaJsonCredentials = core.getInput('yc-sa-json-credentials', {
+        info(`start`)
+        const ycSaJsonCredentials = getInput('yc-sa-json-credentials', {
             required: true
         })
 
-        core.info(`Folder ID: ${config.input.folderId}`)
+        info(`Folder ID: ${config.input.folderId}`)
 
         const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
-        core.info('Parsed Service account JSON')
+        info('Parsed Service account JSON')
 
         const session = new Session({ serviceAccountJson })
         const instanceService = session.client(serviceClients.InstanceServiceClient)
@@ -259,9 +268,9 @@ async function run(): Promise<void> {
         }
     } catch (error) {
         if (error instanceof errors.ApiError) {
-            core.error(`${error.message}\nx-request-id: ${error.requestId}\nx-server-trace-id: ${error.serverTraceId}`)
+            core_error(`${error.message}\nx-request-id: ${error.requestId}\nx-server-trace-id: ${error.serverTraceId}`)
         }
-        core.setFailed(error as Error)
+        setFailed(error as Error)
     }
 }
 
