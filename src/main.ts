@@ -1,12 +1,14 @@
+import axios from 'axios'
 import {
-    error as core_error,
-    setFailed,
-    startGroup,
-    info,
     endGroup,
-    setOutput,
+    error as core_error,
+    getIDToken,
+    getInput,
+    info,
     setCommandEcho,
-    getInput
+    setFailed,
+    setOutput,
+    startGroup
 } from '@actions/core'
 import { context } from '@actions/github'
 import {
@@ -27,11 +29,12 @@ import {
     InstanceServiceService,
     NetworkInterfaceSpec
 } from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance_service'
-import { load, dump } from 'js-yaml'
+import { dump, load } from 'js-yaml'
 import { Config, GithubRepo } from './config'
 import { getRegistrationToken, removeRunner, waitForRunnerRegistered } from './gh'
 import { fromServiceAccountJsonFile } from './service-account-json'
 import moment from 'moment'
+import { SessionConfig } from '@yandex-cloud/nodejs-sdk/dist/types'
 
 let config: Config
 
@@ -241,16 +244,31 @@ async function run(): Promise<void> {
     setCommandEcho(true)
     try {
         info(`start`)
-        const ycSaJsonCredentials = getInput('yc-sa-json-credentials', {
-            required: true
-        })
+        let sessionConfig: SessionConfig = {}
+        const ycSaJsonCredentials = getInput('yc-sa-json-credentials')
+        const ycIamToken = getInput('yc-iam-token')
+        const ycSaId = getInput('yc-sa-id')
+        if (ycSaJsonCredentials !== '') {
+            const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
+            info('Parsed Service account JSON')
+            sessionConfig = { serviceAccountJson }
+        } else if (ycIamToken !== '') {
+            sessionConfig = { iamToken: ycIamToken }
+            info('Using IAM token')
+        } else if (ycSaId !== '') {
+            const ghToken = await getIDToken()
+            if (!ghToken) {
+                throw new Error('No credentials provided')
+            }
+            const saToken = await exchangeToken(ghToken, ycSaId)
+            sessionConfig = { iamToken: saToken }
+        } else {
+            throw new Error('No credentials')
+        }
+        const session = new Session(sessionConfig)
 
         info(`Folder ID: ${config.input.folderId}`)
 
-        const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
-        info('Parsed Service account JSON')
-
-        const session = new Session({ serviceAccountJson })
         const instanceService = session.client(serviceClients.InstanceServiceClient)
 
         switch (config.input.mode) {
@@ -272,6 +290,33 @@ async function run(): Promise<void> {
         }
         setFailed(error as Error)
     }
+}
+
+async function exchangeToken(token: string, saId: string): Promise<string> {
+    info(`Exchanging token for service account ${saId}`)
+    const res = await axios.post(
+        'https://auth.yandex.cloud/oauth/token',
+        {
+            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+            requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+            audience: saId,
+            subject_token: token,
+            subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
+        },
+        {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        }
+    )
+    if (res.status !== 200) {
+        throw new Error(`Failed to exchange token: ${res.status} ${res.statusText}`)
+    }
+    if (!res.data.access_token) {
+        throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`)
+    }
+    info(`Token exchanged successfully`)
+    return res.data.access_token
 }
 
 run()
