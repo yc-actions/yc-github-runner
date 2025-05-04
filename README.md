@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Start YC runner
         id: start-yc-runner
-        uses: yc-actions/yc-github-runner@v1
+        uses: yc-actions/yc-github-runner@v2
         with:
           mode: start
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
@@ -56,7 +56,7 @@ jobs:
     if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
     steps:
       - name: Stop YC runner
-        uses: yc-actions/yc-github-runner@v1
+        uses: yc-actions/yc-github-runner@v2
         with:
           mode: stop
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
@@ -64,6 +64,23 @@ jobs:
           label: ${{ needs.start-runner.outputs.label }}
           instance-id: ${{ needs.start-runner.outputs.instance-id }}
 ```
+
+One of `yc-sa-json-credentials`, `yc-iam-token` or `yc-sa-id` should be provided depending on the authentication method you
+want to use. The action will use the first one it finds.
+* `yc-sa-json-credentials` should contain JSON with authorized key for Service Account. More info
+  in [Yandex Cloud IAM documentation](https://yandex.cloud/en/docs/iam/operations/authentication/manage-authorized-keys#cli_1).
+* `yc-iam-token` should contain IAM token. It can be obtained using `yc iam create-token` command or using
+  [yc-actions/yc-iam-token-fed](https://github.com/yc-actions/yc-iam-token-fed)
+```yaml
+  - name: Get Yandex Cloud IAM token
+    id: get-iam-token
+    uses: docker://ghcr.io/yc-actions/yc-iam-token-fed:1.0.0
+    with:
+      yc-sa-id: aje***
+```
+* `yc-sa-id` should contain Service Account ID. It can be obtained using `yc iam service-accounts list` command. It is
+  used to exchange GitHub token for IAM token using Workload Identity Federation. More info in [Yandex Cloud IAM documentation](https://yandex.cloud/ru/docs/iam/concepts/workload-identity).
+
 
 See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
 
