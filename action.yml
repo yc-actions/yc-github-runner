@@ -31,23 +31,23 @@ inputs:
     required: true
     description: 'Folder ID'
   label:
+    required: false # Required for 'stop' mode
     description: >-
       Name of the unique label assigned to the runner.
       The label is used to remove the runner from GitHub when the runner is not needed anymore.
       This input is required if you use the 'stop' mode.
-    required: false
   runner-home-dir:
     description: >-
       Directory that contains actions-runner software and scripts. E.g. /home/runner/actions-runner.
     required: false
   instance-id:
-    required: false
+    required: false # Required for 'stop' mode
     description: >-
       Id of the created instance.
-      This input is required if you use the 'stop' mode.
+      This input is required if you use the 'stop' mode.'
   image-id:
-    required: false
-    description: 'Id of the image that will be used to create boot disk of the VM.'
+    required: false # Required for 'start' mode
+    description: 'Id of the image that will be used to create boot disk of the VM. This input is required if you use the \u201Cstart\u201D mode.'
   service-account-id:
     required: false
     description: 'Id of service account that will be attached to VM.'
