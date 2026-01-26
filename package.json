@@ -30,7 +30,7 @@
     "@actions/github": "^7.0.0",
     "@grpc/grpc-js": "1.14.3",
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
-    "axios": "1.13.2",
+    "axios": "1.13.3",
     "js-yaml": "^4.1.1",
     "moment": "^2.30.1"
   },
