@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import axios from 'axios'
 import {
     endGroup,
@@ -11,6 +12,7 @@ import {
     startGroup
 } from '@actions/core'
 import { context } from '@actions/github'
+import { Metadata } from 'nice-grpc'
 import {
     decodeMessage,
     errors,
@@ -32,6 +34,7 @@ import {
 import { dump, load } from 'js-yaml'
 import { Config, GithubRepo } from './config'
 import { getRegistrationToken, removeRunner, waitForRunnerRegistered } from './gh'
+import { grpcRetryOptions } from './retry'
 import { fromServiceAccountJsonFile } from './service-account-json'
 import moment from 'moment'
 import { SessionConfig } from '@yandex-cloud/nodejs-sdk/dist/types'
@@ -149,6 +152,8 @@ async function createVm(
         labels['expires'] = moment.utc().add(config.input.ttl).unix().toString()
     }
 
+    const idempotencyKey = randomUUID()
+
     const op = await instanceService.create(
         CreateInstanceRequest.fromPartial({
             folderId: config.input.folderId,
@@ -183,7 +188,13 @@ async function createVm(
             secondaryDiskSpecs,
             networkInterfaceSpecs: [networkInterfaceSpec],
             serviceAccountId: config.input.serviceAccountId
-        })
+        }),
+        {
+            ...grpcRetryOptions(config.input.retryTimeoutMs, 'Create instance'),
+            // Generated once, outside the call, so every retry carries the same key
+            // and a lost response cannot produce a second VM.
+            metadata: Metadata({ 'idempotency-key': idempotencyKey })
+        }
     )
     const finishedOp = await waitForOperation(op, session)
     if (finishedOp.response) {
@@ -204,10 +215,16 @@ async function destroyVm(
 ): Promise<void> {
     startGroup('Create VM')
 
+    const idempotencyKey = randomUUID()
+
     const op = await instanceService.delete(
         DeleteInstanceRequest.fromPartial({
             instanceId: config.input.instanceId
-        })
+        }),
+        {
+            ...grpcRetryOptions(config.input.retryTimeoutMs, 'Delete instance'),
+            metadata: Metadata({ 'idempotency-key': idempotencyKey })
+        }
     )
     const finishedOp = await waitForOperation(op, session)
     if (finishedOp.metadata) {
