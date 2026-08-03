@@ -89,6 +89,22 @@ If it is set, `expires` label will be added to the instance with the value of th
 Instance won't automatically be destroyed by Yandex.Cloud, you should handle it yourself.
 For example, by using Cron trigger that will call Cloud Function to destroy the instance.
 
+### Retry timeout input
+
+Yandex Cloud rejects requests with `RESOURCE_EXHAUSTED` when too many operations are already
+running in the cloud, which is common when many jobs start at once. The action retries such
+failures instead of failing the job immediately.
+
+`retry-timeout` sets how long to keep retrying, in ISO 8601 Duration format. It defaults to `PT5M`.
+Set it to `PT0S` to disable retries. Values above `PT30M` are clamped to `PT30M`.
+
+Retries back off 10s, 20s, 40s and then every minute, with jitter so that concurrent jobs do not
+retry in lockstep. Each create and delete request carries an `Idempotency-Key`, so a retry can
+never create a second VM.
+
+The timeout is a target rather than a hard deadline: jitter and in-flight requests can overshoot it
+by roughly a third.
+
 ## Permissions
 
 To perform this action, it is required that the service account on behalf of which we are acting has granted
