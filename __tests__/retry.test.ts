@@ -1,6 +1,15 @@
-import { describe, expect, test } from '@jest/globals'
+import { beforeEach, describe, expect, jest, test } from '@jest/globals'
+import { warning } from '@actions/core'
 import { Status } from 'nice-grpc'
 import { attemptsForBudget, clampBudget, delayForAttempt, grpcRetryOptions, MAX_BUDGET_MS } from '../src/retry'
+
+jest.mock('@actions/core')
+
+const mockedWarning = jest.mocked(warning)
+
+beforeEach(() => {
+    mockedWarning.mockClear()
+})
 
 describe('delayForAttempt', () => {
     test('climbs to a minute over four steps, then stays there', () => {
@@ -42,6 +51,9 @@ describe('clampBudget', () => {
     test('clamps rather than throws above the cap', () => {
         expect(() => clampBudget(2 * 60 * 60_000)).not.toThrow()
         expect(clampBudget(2 * 60 * 60_000)).toBe(MAX_BUDGET_MS)
+        expect(mockedWarning).toHaveBeenCalledWith(
+            `retry-timeout is above the ${MAX_BUDGET_MS / 60_000} minute maximum, clamping to it`
+        )
     })
 
     test('floors negative budgets at zero', () => {
