@@ -213,7 +213,7 @@ async function destroyVm(
     session: Session,
     instanceService: WrappedServiceClientType<typeof InstanceServiceService>
 ): Promise<void> {
-    startGroup('Create VM')
+    startGroup('Delete VM')
 
     const idempotencyKey = randomUUID()
 
@@ -223,6 +223,8 @@ async function destroyVm(
         }),
         {
             ...grpcRetryOptions(config.input.retryTimeoutMs, 'Delete instance'),
+            // Generated once, outside the call, so every retry carries the same key
+            // and a lost response cannot produce a second delete.
             metadata: Metadata({ 'idempotency-key': idempotencyKey })
         }
     )
@@ -231,8 +233,8 @@ async function destroyVm(
         const instanceId = decodeMessage<CreateInstanceMetadata>(finishedOp.metadata).instanceId
         info(`Destroyed instance with id '${instanceId}'`)
     } else {
-        core_error(`Failed to create instance'`)
-        throw new Error('Failed to create instance')
+        core_error(`Failed to delete instance'`)
+        throw new Error('Failed to delete instance')
     }
     endGroup()
 }
@@ -325,7 +327,8 @@ async function exchangeToken(token: string, saId: string, retryTimeoutMs: number
                 {
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    }
+                    },
+                    timeout: 30_000
                 }
             ),
         retryTimeoutMs,

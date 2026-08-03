@@ -402,12 +402,14 @@ async function createVm(session, instanceService, repo, githubRegistrationToken,
     }
 }
 async function destroyVm(session, instanceService) {
-    (0, core_1.startGroup)('Create VM');
+    (0, core_1.startGroup)('Delete VM');
     const idempotencyKey = (0, node_crypto_1.randomUUID)();
     const op = await instanceService.delete(instance_service_1.DeleteInstanceRequest.fromPartial({
         instanceId: config.input.instanceId
     }), {
         ...(0, retry_1.grpcRetryOptions)(config.input.retryTimeoutMs, 'Delete instance'),
+        // Generated once, outside the call, so every retry carries the same key
+        // and a lost response cannot produce a second delete.
         metadata: (0, nice_grpc_1.Metadata)({ 'idempotency-key': idempotencyKey })
     });
     const finishedOp = await (0, nodejs_sdk_1.waitForOperation)(op, session);
@@ -416,8 +418,8 @@ async function destroyVm(session, instanceService) {
         (0, core_1.info)(`Destroyed instance with id '${instanceId}'`);
     }
     else {
-        (0, core_1.error)(`Failed to create instance'`);
-        throw new Error('Failed to create instance');
+        (0, core_1.error)(`Failed to delete instance'`);
+        throw new Error('Failed to delete instance');
     }
     (0, core_1.endGroup)();
 }
@@ -496,7 +498,8 @@ async function exchangeToken(token, saId, retryTimeoutMs) {
     }, {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        timeout: 30_000
     }), retryTimeoutMs, 'Token exchange');
     if (!res.data.access_token) {
         throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`);

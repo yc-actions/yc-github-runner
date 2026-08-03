@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, jest, test } from '@jest/globals'
-import { warning } from '@actions/core'
+import { info, warning } from '@actions/core'
 import { AxiosError, AxiosHeaders } from 'axios'
-import { Status } from 'nice-grpc'
+import { ClientError, Status } from 'nice-grpc'
 import {
     attemptsForBudget,
     clampBudget,
@@ -14,9 +14,11 @@ import {
 jest.mock('@actions/core')
 
 const mockedWarning = jest.mocked(warning)
+const mockedInfo = jest.mocked(info)
 
 beforeEach(() => {
     mockedWarning.mockClear()
+    mockedInfo.mockClear()
 })
 
 describe('delayForAttempt', () => {
@@ -96,6 +98,22 @@ describe('grpcRetryOptions', () => {
 
         expect(options.retry).toBe(false)
         expect(options.retryMaxAttempts).toBe(0)
+    })
+
+    test('onRetryableError logs the status, details, and retry progress', () => {
+        const options = grpcRetryOptions(5 * 60_000, 'Create instance')
+        const error = new ClientError(
+            '/yandex.cloud.compute.v1.InstanceService/Create',
+            Status.RESOURCE_EXHAUSTED,
+            'The limit on maximum number of active operations has exceeded'
+        )
+
+        options.onRetryableError?.(error, 0, 10_000)
+
+        expect(mockedInfo).toHaveBeenCalledWith(
+            'Create instance failed with RESOURCE_EXHAUSTED: The limit on maximum number of active operations has exceeded. ' +
+                'Retrying in 10s (retry 1 of 6).'
+        )
     })
 })
 
