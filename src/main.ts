@@ -34,7 +34,7 @@ import {
 import { dump, load } from 'js-yaml'
 import { Config, GithubRepo } from './config'
 import { getRegistrationToken, removeRunner, waitForRunnerRegistered } from './gh'
-import { grpcRetryOptions } from './retry'
+import { grpcRetryOptions, withRetry } from './retry'
 import { fromServiceAccountJsonFile } from './service-account-json'
 import moment from 'moment'
 import { SessionConfig } from '@yandex-cloud/nodejs-sdk/dist/types'
@@ -277,7 +277,7 @@ async function run(): Promise<void> {
             if (!ghToken) {
                 throw new Error('No credentials provided')
             }
-            const saToken = await exchangeToken(ghToken, ycSaId)
+            const saToken = await exchangeToken(ghToken, ycSaId, config.input.retryTimeoutMs)
             sessionConfig = { iamToken: saToken }
         } else {
             throw new Error('No credentials')
@@ -309,26 +309,28 @@ async function run(): Promise<void> {
     }
 }
 
-async function exchangeToken(token: string, saId: string): Promise<string> {
+async function exchangeToken(token: string, saId: string, retryTimeoutMs: number): Promise<string> {
     info(`Exchanging token for service account ${saId}`)
-    const res = await axios.post(
-        'https://auth.yandex.cloud/oauth/token',
-        {
-            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-            requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-            audience: saId,
-            subject_token: token,
-            subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
-        },
-        {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        }
+    const res = await withRetry(
+        () =>
+            axios.post(
+                'https://auth.yandex.cloud/oauth/token',
+                {
+                    grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                    requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+                    audience: saId,
+                    subject_token: token,
+                    subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            ),
+        retryTimeoutMs,
+        'Token exchange'
     )
-    if (res.status !== 200) {
-        throw new Error(`Failed to exchange token: ${res.status} ${res.statusText}`)
-    }
     if (!res.data.access_token) {
         throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`)
     }
