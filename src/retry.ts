@@ -1,5 +1,6 @@
 import { info, warning } from '@actions/core'
 import { RetryOptions } from '@yandex-cloud/nodejs-sdk/dist/middleware/retry'
+import { isAxiosError } from 'axios'
 import { Status } from 'nice-grpc'
 
 /**
@@ -74,6 +75,56 @@ export function grpcRetryOptions(budgetMs: number, opName: string): RetryOptions
                 `${opName} failed with ${Status[error.code]}: ${error.details}. ` +
                     `Retrying in ${Math.round(delayMs / 1000)}s (retry ${attempt + 1} of ${retryMaxAttempts}).`
             )
+        }
+    }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/** Mirrors the SDK middleware's jitter so both paths behave alike. */
+function jitter(nominalMs: number): number {
+    return Math.round(((nominalMs / JITTER_MEAN) * (1 + Math.random())) / 2)
+}
+
+function isRetryableHttpError(error: unknown): boolean {
+    if (!isAxiosError(error)) {
+        return false
+    }
+    const status = error.response?.status
+    if (status === undefined) {
+        // No response arrived at all: connection reset, DNS failure, timeout.
+        return true
+    }
+    return status === 429 || status >= 500
+}
+
+/**
+ * Retries `fn` on transient HTTP failures using the same schedule as the gRPC
+ * calls. Used for the token exchange, which does not go through the SDK.
+ */
+export async function withRetry<T>(
+    fn: () => Promise<T>,
+    budgetMs: number,
+    opName: string,
+    sleepFn: (ms: number) => Promise<void> = sleep
+): Promise<T> {
+    const maxAttempts = attemptsForBudget(budgetMs)
+
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await fn()
+        } catch (error) {
+            if (attempt >= maxAttempts || !isRetryableHttpError(error)) {
+                throw error
+            }
+            const delayMs = jitter(delayForAttempt(attempt))
+            info(
+                `${opName} failed: ${(error as Error).message}. ` +
+                    `Retrying in ${Math.round(delayMs / 1000)}s (retry ${attempt + 1} of ${maxAttempts}).`
+            )
+            await sleepFn(delayMs)
         }
     }
 }
