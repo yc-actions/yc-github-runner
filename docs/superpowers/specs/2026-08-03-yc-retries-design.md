@@ -148,13 +148,46 @@ genuinely stuck cloud still fails with the real `RESOURCE_EXHAUSTED` message plu
 `x-server-trace-id`, exactly as the issue reporter saw. Retrying delays that outcome; it never masks
 it.
 
-## Known limitation
+## Known limitations
 
 `retry-timeout` is a target, not a hard deadline. The budget sizes the *attempt count* from expected
 delays, but jitter varies each actual delay between 0.67× and 1.33× nominal, and an in-flight gRPC
 call can itself take minutes. Real elapsed time can overshoot the budget by roughly a third. Making
 it exact would require the rejected `AbortSignal` approach, at the cost of the final error message.
 This is documented in the input description.
+
+### Retry coverage does not reach every gRPC failure shape
+
+The SDK's client factory builds its middleware stack as
+`createClientFactory().use(errorMetadataMiddleware).use(retryMiddleware).use(deadlineMiddleware)`
+(`dist/utils/client-factory.js`). Because `composeClientMiddleware(m1, m2)` makes `m2` the outer
+layer, chaining `.use` calls like this nests them with the *last* `.use` outermost. The effective
+call order is therefore deadline → retry → errorMetadata → the actual gRPC call: `retryMiddleware`
+sits *outside* `errorMetadataMiddleware`, not inside it.
+
+That ordering matters because `retryMiddleware`'s guard is `!(error instanceof ClientError) → throw`
+(`dist/middleware/retry.js`) — anything that isn't a `ClientError` skips retrying entirely,
+regardless of `retryableStatuses`. `errorMetadataMiddleware` (`dist/middleware/error-metadata.js`),
+running on the inside, rewrites any error into a `new ApiError(error, md)` whenever response headers
+(`md`) were captured before the failure. `ApiError extends Error`, not `ClientError`
+(`dist/errors.js`), so once headers have arrived, a subsequent failure on that same call is wrapped
+as an `ApiError` and `retryMiddleware` — sitting outside it — never sees a `ClientError` to retry.
+In short, this design retries transient failures that occur before the server sends headers, but not
+ones that occur after headers arrive but before a full response.
+
+The case this whole effort was built for is unaffected. Issue #700's log line reads
+`Error: ClientError: /yandex.cloud.compute.v1.InstanceService/Create RESOURCE_EXHAUSTED: ...` —
+note the `ClientError:` prefix, not `ApiError:` (`ApiError` sets `name = 'ApiError'`, so a wrapped
+error would render differently). That means the failure arrived with no response headers at all,
+so `errorMetadataMiddleware` never wraps it and `retryMiddleware` retries it as designed.
+
+Coverage is therefore partial: it fully handles the reported issue and any failure of the same
+shape, but not a `RESOURCE_EXHAUSTED`/`UNAVAILABLE`/etc. that shows up after headers are already on
+the wire. Closing that gap can't be done by reordering `.use()` calls alone without risking other
+behavior the SDK relies on, and doing it properly would mean writing a bespoke retry layer instead
+of configuring the SDK's own middleware — reopening the "custom `withRetry` for everything"
+alternative this design already rejected. Left as follow-up work rather than blocking this change,
+since it doesn't affect the reported issue.
 
 ## Testing
 
