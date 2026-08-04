@@ -1,6 +1,17 @@
-import { expect, test } from '@jest/globals'
-import { Config } from '../src/config'
+import { beforeEach, describe, expect, jest, test } from '@jest/globals'
+import { info, warning } from '@actions/core'
+import { Config, parseRetryTimeout } from '../src/config'
 import { parseMemory } from '../src/memory'
+
+jest.mock('@actions/core')
+
+const mockedWarning = jest.mocked(warning)
+const mockedInfo = jest.mocked(info)
+
+beforeEach(() => {
+    mockedWarning.mockClear()
+    mockedInfo.mockClear()
+})
 
 test('basic Config', () => {
     expect(() => {
@@ -26,6 +37,7 @@ test('basic Config', () => {
             sshPublicKey: '',
             runnerVersion: '2.299.1',
             disableUpdate: false,
+            retryTimeoutMs: 5 * 60_000,
             resourcesSpec: {
                 cores: 1,
                 memory: 10 * 1024 ** 3,
@@ -59,6 +71,7 @@ test('add secondary disk', () => {
             sshPublicKey: '',
             runnerVersion: '2.299.1',
             disableUpdate: false,
+            retryTimeoutMs: 5 * 60_000,
             resourcesSpec: {
                 cores: 1,
                 memory: parseMemory('8Gb'),
@@ -92,6 +105,7 @@ test('add secondary disk without image-id throw error', () => {
             sshPublicKey: 'sshPublicKey',
             runnerVersion: '2.299.1',
             disableUpdate: false,
+            retryTimeoutMs: 5 * 60_000,
             resourcesSpec: {
                 cores: 1,
                 memory: parseMemory('8Gb'),
@@ -99,4 +113,32 @@ test('add secondary disk without image-id throw error', () => {
             }
         })
     }).toThrowErrorMatchingSnapshot()
+})
+
+describe('parseRetryTimeout', () => {
+    test('defaults to five minutes when unset', () => {
+        expect(parseRetryTimeout('')).toBe(5 * 60_000)
+    })
+
+    test('parses an ISO-8601 duration', () => {
+        expect(parseRetryTimeout('PT10M')).toBe(10 * 60_000)
+        expect(parseRetryTimeout('PT90S')).toBe(90_000)
+    })
+
+    test('clamps above thirty minutes instead of throwing', () => {
+        expect(() => parseRetryTimeout('PT2H')).not.toThrow()
+        expect(parseRetryTimeout('PT2H')).toBe(30 * 60_000)
+        expect(mockedWarning).toHaveBeenCalledWith('retry-timeout is above the 30 minute maximum, clamping to it')
+    })
+
+    test('treats an explicit zero as retries disabled', () => {
+        expect(parseRetryTimeout('PT0S')).toBe(0)
+        expect(mockedInfo).toHaveBeenCalledWith('Retries are disabled: retry-timeout resolves to a zero duration')
+    })
+
+    test('treats an unparseable value as retries disabled rather than failing', () => {
+        expect(() => parseRetryTimeout('not-a-duration')).not.toThrow()
+        expect(parseRetryTimeout('not-a-duration')).toBe(0)
+        expect(mockedInfo).toHaveBeenCalledWith('Retries are disabled: retry-timeout resolves to a zero duration')
+    })
 })

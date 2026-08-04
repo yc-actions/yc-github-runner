@@ -1,6 +1,7 @@
-import { startGroup, getInput, getBooleanInput, endGroup } from '@actions/core'
+import { startGroup, getInput, getBooleanInput, endGroup, info } from '@actions/core'
 import { context } from '@actions/github'
 import { parseMemory } from './memory'
+import { clampBudget } from './retry'
 import moment from 'moment'
 
 export interface ResourcesSpec {
@@ -37,6 +38,7 @@ export interface ActionConfig {
     runnerVersion: string
     ttl?: moment.Duration
     disableUpdate: boolean
+    retryTimeoutMs: number
 }
 
 export interface GithubRepo {
@@ -93,6 +95,26 @@ export class Config {
     }
 }
 
+const DEFAULT_RETRY_TIMEOUT = 'PT5M'
+
+/**
+ * Parses the `retry-timeout` input into a millisecond budget.
+ *
+ * Values above the internal maximum are clamped, not rejected: an oversized
+ * budget must never fail the job at startup. `moment.duration` yields 0 for
+ * unparseable input rather than throwing, so a typo disables retries; the
+ * info line below makes that visible in the job log.
+ */
+export function parseRetryTimeout(raw: string): number {
+    const budgetMs = clampBudget(moment.duration(raw || DEFAULT_RETRY_TIMEOUT).asMilliseconds())
+
+    if (budgetMs === 0) {
+        info('Retries are disabled: retry-timeout resolves to a zero duration')
+    }
+
+    return budgetMs
+}
+
 function parseVmInputs(): ActionConfig {
     startGroup('Parsing Action Inputs')
 
@@ -127,6 +149,7 @@ function parseVmInputs(): ActionConfig {
 
     const runnerVersion: string = getInput('runner-version', { required: false })
     const disableUpdate: boolean = getBooleanInput('disable-update', { required: false })
+    const retryTimeoutMs: number = parseRetryTimeout(getInput('retry-timeout', { required: false }))
 
     let ttl: moment.Duration | undefined = undefined
     const ttlInput = getInput('ttl', { required: false })
@@ -158,6 +181,7 @@ function parseVmInputs(): ActionConfig {
         runnerVersion,
         ttl,
         disableUpdate,
+        retryTimeoutMs,
         resourcesSpec: {
             cores,
             memory,
