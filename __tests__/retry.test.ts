@@ -22,12 +22,15 @@ beforeEach(() => {
 })
 
 describe('delayForAttempt', () => {
-    test('climbs to a minute over four steps, then stays there', () => {
-        expect(delayForAttempt(0)).toBe(10_000)
-        expect(delayForAttempt(1)).toBe(20_000)
-        expect(delayForAttempt(2)).toBe(40_000)
-        expect(delayForAttempt(3)).toBe(60_000)
-        expect(delayForAttempt(4)).toBe(60_000)
+    test('doubles from a second up to a minute, then stays there', () => {
+        expect(delayForAttempt(0)).toBe(1_000)
+        expect(delayForAttempt(1)).toBe(2_000)
+        expect(delayForAttempt(2)).toBe(4_000)
+        expect(delayForAttempt(3)).toBe(8_000)
+        expect(delayForAttempt(4)).toBe(16_000)
+        expect(delayForAttempt(5)).toBe(32_000)
+        expect(delayForAttempt(6)).toBe(60_000)
+        expect(delayForAttempt(7)).toBe(60_000)
         expect(delayForAttempt(50)).toBe(60_000)
     })
 })
@@ -39,16 +42,16 @@ describe('attemptsForBudget', () => {
     })
 
     test('a retry is only counted if its whole delay fits', () => {
-        expect(attemptsForBudget(9_999)).toBe(0)
-        expect(attemptsForBudget(10_000)).toBe(1)
-        expect(attemptsForBudget(29_999)).toBe(1)
-        expect(attemptsForBudget(30_000)).toBe(2)
+        expect(attemptsForBudget(999)).toBe(0)
+        expect(attemptsForBudget(1_000)).toBe(1)
+        expect(attemptsForBudget(2_999)).toBe(1)
+        expect(attemptsForBudget(3_000)).toBe(2)
     })
 
     test('matches the documented budget table', () => {
-        expect(attemptsForBudget(5 * 60_000)).toBe(6)
-        expect(attemptsForBudget(10 * 60_000)).toBe(11)
-        expect(attemptsForBudget(30 * 60_000)).toBe(31)
+        expect(attemptsForBudget(5 * 60_000)).toBe(9)
+        expect(attemptsForBudget(10 * 60_000)).toBe(14)
+        expect(attemptsForBudget(30 * 60_000)).toBe(34)
     })
 })
 
@@ -75,11 +78,11 @@ describe('grpcRetryOptions', () => {
     test('emits the constants that place expected delays on the schedule', () => {
         const options = grpcRetryOptions(5 * 60_000, 'Create instance')
 
-        // 13333 * 0.75 = 10s, doubling to 20s and 40s; 80000 * 0.75 = 60s thereafter.
-        expect(options.retryBaseDelayMs).toBe(13_333)
+        // 1333 * 0.75 = 1s, doubling through to 32s; 80000 * 0.75 = 60s thereafter.
+        expect(options.retryBaseDelayMs).toBe(1_333)
         expect(options.retryMaxDelayMs).toBe(80_000)
         expect(options.retry).toBe(true)
-        expect(options.retryMaxAttempts).toBe(6)
+        expect(options.retryMaxAttempts).toBe(9)
     })
 
     test('retries the four transient statuses', () => {
@@ -108,11 +111,11 @@ describe('grpcRetryOptions', () => {
             'The limit on maximum number of active operations has exceeded'
         )
 
-        options.onRetryableError?.(error, 0, 10_000)
+        options.onRetryableError?.(error, 0, 1_000)
 
         expect(mockedInfo).toHaveBeenCalledWith(
             'Create instance failed with RESOURCE_EXHAUSTED: The limit on maximum number of active operations has exceeded. ' +
-                'Retrying in 10s (retry 1 of 6).'
+                'Retrying in 1s (retry 1 of 9).'
         )
     })
 })
@@ -180,12 +183,12 @@ describe('withRetry', () => {
                         calls++
                         throw error
                     },
-                    30_000,
+                    3_000,
                     'Token exchange',
                     noSleep
                 )
             ).rejects.toBe(error)
-            expect(calls).toBe(3) // 2 retries fit in 30s, so 3 calls
+            expect(calls).toBe(3) // 2 retries fit in 3s, so 3 calls
         }
     })
 
@@ -240,7 +243,7 @@ describe('withRetry', () => {
             )
         ).rejects.toBe(error)
 
-        expect(calls).toBe(7) // 6 retries + the original call
+        expect(calls).toBe(10) // 9 retries + the original call
     })
 
     test('jitters each delay within half to full of the SDK backoff', async () => {
@@ -258,9 +261,9 @@ describe('withRetry', () => {
             )
         ).rejects.toBeDefined()
 
-        expect(delays).toHaveLength(3)
-        // Nominal 10s/20s/40s, so actual is within [nominal / 1.5, nominal / 0.75].
-        for (const [index, nominal] of [10_000, 20_000, 40_000].entries()) {
+        expect(delays).toHaveLength(6)
+        // Nominal 1s..32s, so actual is within [nominal / 1.5, nominal / 0.75].
+        for (const [index, nominal] of [1_000, 2_000, 4_000, 8_000, 16_000, 32_000].entries()) {
             expect(delays[index]).toBeGreaterThanOrEqual(Math.floor(nominal / 1.5))
             expect(delays[index]).toBeLessThanOrEqual(Math.ceil(nominal / 0.75))
         }

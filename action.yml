@@ -111,7 +111,7 @@ inputs:
     required: false
     description: >-
       How long to keep retrying transient Yandex Cloud errors, in ISO 8601 Duration format. E.g. PT5M.
-      Retries back off 10s, 20s, 40s, then every minute, with jitter.
+      Retries back off 1s, 2s, 4s, 8s, 16s, 32s, then every minute, with jitter.
       Set to PT0S to disable retries. Values above PT30M are clamped to PT30M.
       This is a target rather than a hard deadline: jitter and in-flight requests can overshoot it.
     default: 'PT5M'

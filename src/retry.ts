@@ -4,10 +4,11 @@ import { isAxiosError } from 'axios'
 import { Status } from 'nice-grpc'
 
 /**
- * Nominal backoff schedule: 10s -> 20s -> 40s -> 60s -> 60s -> ...
- * Four steps climbing to a minute, then a fixed one-minute interval.
+ * Nominal backoff schedule: 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 60s -> 60s -> ...
+ * A doubling climb from a second up to a minute, then a fixed one-minute interval.
+ * The first steps are short so a brief hiccup costs a second rather than ten.
  */
-const CLIMB_MS = [10_000, 20_000, 40_000]
+const CLIMB_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 32_000]
 const STEADY_MS = 60_000
 
 /** Internal cap on the retry budget. Larger values are clamped, never rejected. */

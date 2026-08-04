@@ -42,8 +42,9 @@ Rejected alternatives:
 
 ## Retry schedule
 
-Nominal delays: **10s → 20s → 40s → 60s → 60s → …** — four steps climbing to a minute, then a fixed
-one-minute interval.
+Nominal delays: **1s → 2s → 4s → 8s → 16s → 32s → 60s → 60s → …** — a doubling climb from a second
+to a minute, then a fixed one-minute interval. Starting at a second keeps the cost of a brief
+hiccup proportional to it.
 
 The SDK computes `delay = min(cap, 2^k · base) · (1 + rand) / 2`, so the expected delay is
 `0.75 × backoff`. Dividing the nominal targets by `0.75` makes the *expected* delays land on the
@@ -51,8 +52,8 @@ schedule above:
 
 | constant            | value      | expected delays        |
 | ------------------- | ---------- | ---------------------- |
-| `retryBaseDelayMs`  | `13_333`   | 10s, 20s, 40s          |
-| `retryMaxDelayMs`   | `80_000`   | 60s from the 4th on    |
+| `retryBaseDelayMs`  | `1_333`    | 1s, 2s, 4s, 8s, 16s, 32s |
+| `retryMaxDelayMs`   | `80_000`   | 60s from the 7th on      |
 
 Jitter is kept deliberately. The root cause is many jobs colliding, so spreading their retries out
 is a feature, not noise.
@@ -76,9 +77,9 @@ fits the budget:
 | budget  | retries | approx. waiting |
 | ------- | ------- | --------------- |
 | `PT0S`  | 0       | —               |
-| `PT5M`  | 6       | ~250s           |
-| `PT10M` | 11      | ~550s           |
-| `PT30M` | 31      | ~1750s          |
+| `PT5M`  | 9       | ~243s           |
+| `PT10M` | 14      | ~543s           |
+| `PT30M` | 34      | ~1743s          |
 
 ## `src/retry.ts`
 
@@ -196,7 +197,7 @@ no SDK mocking infrastructure. New tests match that shape:
 
 `__tests__/retry.test.ts`
 
-- `attemptsForBudget` at boundaries: `PT0S` → 0, `PT5M` → 6, `PT30M` → 31.
+- `attemptsForBudget` at boundaries: `PT0S` → 0, `PT5M` → 9, `PT30M` → 34.
 - Budgets above 30 minutes clamp rather than throw.
 - `grpcRetryOptions` emits the constants that place expected delays at 10/20/40/60/60.
 - `withRetry` against a fake function: retries 429/5xx, does not retry 400/401, stops at the attempt

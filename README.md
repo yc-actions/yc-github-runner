@@ -98,7 +98,7 @@ failures instead of failing the job immediately.
 `retry-timeout` sets how long to keep retrying, in ISO 8601 Duration format. It defaults to `PT5M`.
 Set it to `PT0S` to disable retries. Values above `PT30M` are clamped to `PT30M`.
 
-Retries back off 10s, 20s, 40s and then every minute, with jitter so that concurrent jobs do not
+Retries back off 1s, 2s, 4s, 8s, 16s, 32s and then every minute, with jitter so that concurrent jobs do not
 retry in lockstep. Each create and delete request carries an `Idempotency-Key`, so a retry can
 never create a second VM.
 
